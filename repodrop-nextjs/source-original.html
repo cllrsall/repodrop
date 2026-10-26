@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RepoDrop – GitHub Uploader</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0a0c'/%3E%3Cpath d='M18 38l14-18 14 18H18z' fill='%23e8eef8'/%3E%3Ccircle cx='32' cy='42' r='4' fill='%2394a3b8'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="dark"]{
+  --ink:#ececef;
+  --mute:rgba(180,180,190,.55);
+  --line:rgba(255,255,255,.09);
+  --line-strong:rgba(255,255,255,.16);
+  --glass-1:rgba(16,16,20,.88);
+  --glass-2:rgba(6,6,10,.92);
+  --bg1:#000;
+  --bg2:#000;
+  --bg3:#000;
+  --orb1:#1e2430;
+  --orb2:#12151c;
+  --orb3:#181c28;
+  --input-bg:rgba(0,0,0,.52);
+  --drop-bg:linear-gradient(145deg,rgba(12,14,18,.55),rgba(4,6,10,.5));
+  --list-bg:rgba(0,0,0,.48);
+  --nav-bg:linear-gradient(180deg,rgba(16,18,24,.9),rgba(6,8,12,.94));
+  --acc-grad:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 35%,#64748b 70%,#1e3a5f 100%);
+  --acc-solid:#94a3b8;
+  --acc-soft:rgba(148,163,184,.18);
+  --bad:#ff8fa3;
+  --ok:#6ee7b7;
+  --toast-bg:rgba(12,14,18,.94);
+  --skel:rgba(255,255,255,.06);
+  --skel-shine:rgba(255,255,255,.1);
+  --noise-op:.035;
+  --btn-text:#0a0e14;
+}
+[data-theme="light"]{
+  --ink:#0f172a;
+  --mute:rgba(51,65,85,.7);
+  --line:rgba(15,23,42,.1);
+  --line-strong:rgba(15,23,42,.18);
+  --glass-1:rgba(255,255,255,.78);
+  --glass-2:rgba(241,245,249,.86);
+  --bg1:#f1f5f9;
+  --bg2:#e2e8f0;
+  --bg3:#f8fafc;
+  --orb1:#cbd5e1;
+  --orb2:#94a3b8;
+  --orb3:#e2e8f0;
+  --input-bg:rgba(255,255,255,.75);
+  --drop-bg:linear-gradient(145deg,rgba(255,255,255,.7),rgba(241,245,249,.65));
+  --list-bg:rgba(255,255,255,.55);
+  --nav-bg:linear-gradient(180deg,rgba(255,255,255,.88),rgba(241,245,249,.92));
+  --acc-grad:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 30%,#475569 70%,#1e3a5f 100%);
+  --acc-solid:#334155;
+  --acc-soft:rgba(30,58,95,.12);
+  --bad:#e11d48;
+  --ok:#059669;
+  --toast-bg:rgba(255,255,255,.96);
+  --skel:rgba(15,23,42,.06);
+  --skel-shine:rgba(15,23,42,.1);
+  --noise-op:.025;
+  --btn-text:#0a0e14;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:18px}
+/* Hide scrollbar chrome while keeping native touch/trackpad scrolling enabled. */
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+html{overscroll-behavior-y:contain}
+body{-webkit-overflow-scrolling:touch;overscroll-behavior-x:none}
+body{overflow-anchor:none;
+  margin:0;min-height:100vh;
+  background:#000;
+  color:var(--ink);
+  font:500 15px/1.55 'Plus Jakarta Sans',system-ui,sans-serif;
+  overflow-x:hidden;
+  padding-bottom:110px;
+  transition:background .35s ease,color .25s ease;
+}
+/* animated chart/grid backdrop (tools-collection vibe) */
+.bg-stage{
+  position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:#000;
+}
+.bg-stage canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.bg-vignette{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.04),transparent 42%),
+    radial-gradient(ellipse at 80% 70%,rgba(40,50,70,.12),transparent 40%),
+    linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.55) 100%);
+}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9998;
+  opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat:repeat;background-size:160px 160px;
+}
+.orb{display:none}
+main{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:32px 16px 40px}
+h1{font-size:clamp(1.9rem,5vw,2.8rem);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}
+header p{margin:0;color:var(--mute);max-width:48ch;font-size:.95rem}
+h2{font-size:1.05rem;margin:0 0 14px;font-weight:700}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-bottom:28px;padding:4px 0;
+}
+.brand{
+  display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);
+}
+.brand-mark{
+  width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 8px 20px rgba(0,0,0,.35);
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.15}
+.brand-text strong{font-size:1.05rem;font-weight:800;letter-spacing:-.02em}
+.brand-text small{font-size:.62rem;letter-spacing:.14em;color:var(--mute);font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.hero-title{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:24px}
+.hero-title .eyebrow{
+  margin:0 0 8px;font-size:.68rem;letter-spacing:.18em;color:var(--mute);font-weight:600;
+}
+.hero-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.theme-btn{
+  width:42px;height:42px;border-radius:14px;border:1px solid var(--line);
+  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  color:var(--ink);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  transition:transform .2s,background .2s;padding:0
+}
+.theme-btn:hover{transform:translateY(-1px);background:var(--acc-soft)}
+.theme-btn:active{transform:scale(.96)}
+.github-brand{
+  flex:none;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;
+  border:1px solid var(--line);border-radius:16px;color:var(--ink);text-decoration:none;
+  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  box-shadow:0 12px 28px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.1);
+  backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);
+  transition:transform .25s,background .25s;font-size:.9rem
+}
+.github-brand:hover{transform:translateY(-2px);background:var(--acc-soft)}
+.github-brand .fa-github{font-size:1.25rem}
+.github-brand .external{font-size:.62rem;color:var(--mute)}
+.page{display:none;opacity:0;transform:translateY(10px);transition:opacity .28s ease,transform .28s ease}
+.page.active{display:block;opacity:1;transform:translateY(0);animation:pageIn .32s ease both}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.glass{
+  background:linear-gradient(160deg,rgba(18,18,22,.82) 0%,rgba(6,6,8,.88) 100%);
+  border:1px solid rgba(255,255,255,.1);
+  border-top-color:rgba(255,255,255,.22);
+  border-bottom-color:rgba(0,0,0,.4);
+  border-radius:24px;
+  box-shadow:
+    0 32px 70px rgba(0,0,0,.62),
+    0 0 0 1px rgba(255,255,255,.03),
+    inset 0 1.5px 0 rgba(255,255,255,.2),
+    inset 0 -1px 0 rgba(0,0,0,.25),
+    inset 1px 0 0 rgba(255,255,255,.06),
+    inset -1px 0 0 rgba(0,0,0,.08);
+  backdrop-filter:blur(36px) saturate(160%);-webkit-backdrop-filter:blur(36px) saturate(160%);
+  padding:22px;position:relative;overflow:hidden;margin-bottom:16px
+}
+[data-theme="light"] .glass{
+  background:linear-gradient(160deg,rgba(255,255,255,.88) 0%,rgba(241,245,249,.94) 100%);
+  border-top-color:rgba(255,255,255,.95);
+  border-bottom-color:rgba(15,23,42,.12);
+  box-shadow:
+    0 28px 56px rgba(15,23,42,.12),
+    inset 0 1.5px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(15,23,42,.06);
+}
+.glass::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 28%),
+    radial-gradient(520px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.1),transparent 40%);
+  opacity:1;transition:opacity .2s
+}
+.glass::after{
+  content:"";position:absolute;left:12%;right:12%;top:0;height:1px;border-radius:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+  pointer-events:none
+}
+.glass:hover::before{opacity:1}
+.tech-brands{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tech-brand{
+  display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border-radius:14px;
+  border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:.8rem;font-weight:600;
+  background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.02));
+  box-shadow:0 10px 24px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.12);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  transition:transform .22s,background .22s
+}
+.tech-brand:hover{transform:translateY(-2px);background:var(--acc-soft)}
+.tech-brand svg{width:17px;height:17px;flex-shrink:0}
+label{display:block;font-size:.82rem;color:var(--mute);margin:12px 0 5px}
+input[type=text],input[type=password],select{
+  width:100%;background:var(--input-bg);border:1px solid var(--line);border-radius:14px;
+  padding:11px 14px;color:var(--ink);font:inherit;outline:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+}
+select option{background:#0c0e12;color:#ececef}
+[data-theme="light"] select option{background:#f8fafc;color:#0f172a}
+input::placeholder{color:rgba(128,128,140,.55)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--acc-solid);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row>*{flex:1}
+/* Keep the Branch and Destination Folder inputs perfectly aligned, even when the label wraps on mobile. */
+#page-repo .repo-fields{align-items:flex-end}
+#page-repo .repo-fields label{min-height:2.4em;display:flex;align-items:flex-end}
+#page-repo .repo-fields input{box-sizing:border-box}
+.chk{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--mute);margin-top:10px}
+.chk input{accent-color:var(--acc-solid)}
+button{
+  font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 18px;color:var(--btn-text);cursor:pointer;
+  background:var(--acc-grad);
+  box-shadow:0 8px 22px rgba(30,58,95,.28),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .15s,opacity .2s
+}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.ghost{
+  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  color:var(--ink);border:1px solid var(--line);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);font-weight:600
+}
+[data-theme="light"] button.ghost{
+  background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(241,245,249,.8));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 3px rgba(15,23,42,.06)
+}
+a{color:var(--acc-solid)}
+small,.hint{color:var(--mute);font-size:.8rem}
+.me{display:flex;align-items:center;gap:12px;margin-top:14px}
+.me img{width:42px;height:42px;border-radius:50%;border:2px solid var(--line)}
+.me b{display:block}
+.me button{flex:none;padding:8px 12px}
+.note{margin-top:12px;font-size:.85rem;min-height:1.2em}
+.bad{color:var(--bad)}
+.ok{color:var(--ok)}
+.empty-gate{display:none;text-align:center;padding:36px 20px 28px}
+.empty-gate.show{display:block}
+.empty-gate .eg-icon{
+  width:64px;height:64px;margin:0 auto 16px;border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  border:1px solid var(--line);font-size:1.5rem;color:var(--acc-solid);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1)
+}
+.empty-gate strong{display:block;font-size:1.05rem;margin-bottom:6px}
+.empty-gate p{margin:0;color:var(--mute);font-size:.9rem;max-width:32ch;margin-left:auto;margin-right:auto}
+.page-content{display:block}
+.page-content.hidden{display:none}
+.drop{
+  border:2px dashed rgba(148,163,184,.22);border-radius:20px;padding:34px 16px;text-align:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.095),rgba(255,255,255,.025));backdrop-filter:blur(26px) saturate(155%);-webkit-backdrop-filter:blur(26px) saturate(155%);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 18px 50px rgba(0,0,0,.22);transition:border-color .25s,background .25s,box-shadow .25s
+}
+.drop.over{border-color:var(--acc-solid);background:var(--acc-soft);box-shadow:0 0 36px rgba(30,58,95,.12)}
+.drop strong{display:block;font-size:1.15rem;margin-bottom:4px}
+.drop .row{justify-content:center;margin-top:16px}
+.drop .row>*{flex:none}
+.list{max-height:520px;overflow:auto;overscroll-behavior:contain;scroll-behavior:smooth;margin-top:14px;border-radius:20px;background:linear-gradient(155deg,rgba(3,24,48,.94),rgba(5,38,65,.88));backdrop-filter:blur(34px) saturate(175%);-webkit-backdrop-filter:blur(34px) saturate(175%);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 20px 48px rgba(0,0,0,.27);padding:12px 0;color:#e7f4ff}
+.item{display:flex;gap:8px;align-items:center;padding:5px 12px;font-size:.82rem;border-bottom:none}
+.item:hover{background:rgba(148,163,184,.06)}
+.item .tree-indent{display:inline-flex;align-items:center;flex-shrink:0;color:var(--mute);opacity:.45;font-family:ui-monospace,Menlo,monospace;font-size:.75rem;letter-spacing:-.02em;user-select:none}
+.item .tree-icon{width:18px;text-align:center;flex-shrink:0;font-size:.9rem}
+.item .tree-icon.folder{color:#94a3b8}
+.item .tree-icon.file-js{color:#f7df1e}
+.item .tree-icon.file-ts{color:#3178c6}
+.item .tree-icon.file-json{color:#cbcb41}
+.item .tree-icon.file-css{color:#264de4}
+.item .tree-icon.file-md{color:#519aba}
+.item .tree-icon.file-img{color:#a855f7}
+.item .tree-icon.file-cfg{color:#f59e0b}
+.item .tree-icon.file-lock{color:#ef4444}
+.item .tree-icon.file-default{color:var(--mute)}
+.item .tree-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.item .tree-name.folder-name{font-weight:650;color:var(--ink)}
+.item em{font-style:normal;color:var(--mute);white-space:nowrap;font-size:.75rem}
+.item button{padding:0 8px;background:none;box-shadow:none;color:var(--mute);font-size:1.05rem;flex-shrink:0}
+.tree-folder-row{opacity:.95}
+.tree-summary{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:9px;margin:0 10px 10px;padding:11px 14px;border-radius:12px;background:linear-gradient(100deg,rgba(0,210,145,.9),rgba(0,160,125,.86));color:#effff9;font-size:.78rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;box-shadow:0 5px 22px rgba(0,220,160,.18)}
+.tree-summary i{font-size:1rem}
+.list .item{min-height:32px;padding-top:5px;padding-bottom:5px;color:#e5f2ff}
+.list .item:hover{background:rgba(92,195,255,.09)}
+.list .tree-name.folder-name{color:#f1f8ff}
+.list .tree-indent{color:#76a9d3;opacity:.72}
+.list .item em{color:#9eb8d1}
+.list .item button{color:#b7d0e7}
+.list .item .file-state{background:rgba(255,255,255,.08)}
+.list .tree-folder-row .tree-icon{color:#ffc94f}
+.list .tree-folder-row .tree-name{font-weight:700}
+@media(max-width:560px){.list{max-height:60vh}.list .item{gap:6px;padding-left:9px;padding-right:9px}.list .tree-indent{font-size:.68rem}.list .item .file-state{display:none}}
+.bar{height:8px;border-radius:8px;background:rgba(148,163,184,.12);overflow:hidden;margin-top:16px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--acc-grad);transition:width .2s}
+#log{max-height:160px;overflow:auto;font-size:.78rem;color:var(--mute);margin-top:10px;font-family:ui-monospace,Menlo,monospace}
+#log .log-ok{color:var(--ok)}
+#log .log-row{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+.sum{display:flex;justify-content:space-between;margin-top:14px;font-size:.88rem}
+.preflight{margin-top:14px;padding:14px 15px;border:1px solid var(--line);border-radius:17px;background:var(--drop-bg)}
+.preflight-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.preflight-head strong{font-size:.88rem}
+.preflight-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(148,163,184,.08);border:1px solid var(--line);font-size:.72rem;color:var(--mute)}
+.pill.pass{color:var(--ok)}.pill.warn{color:#f59e0b}.pill.fail{color:var(--bad)}
+.item .file-state{font-size:.68rem;border-radius:999px;padding:3px 7px;white-space:nowrap;background:rgba(148,163,184,.08);color:var(--mute)}
+.item .file-state.pass{color:var(--ok);background:rgba(52,211,153,.1)}
+.item .file-state.warn{color:#f59e0b;background:rgba(245,158,11,.1)}
+.item .file-state.fail{color:var(--bad);background:rgba(251,113,133,.1)}
+.item .file-actions{display:flex;align-items:center;gap:4px}
+.item .preview-btn{padding:3px 7px;font-size:.7rem;background:var(--acc-soft);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.preview-panel{display:none;margin-top:12px;padding:16px;border:1px solid rgba(255,255,255,.16);border-radius:20px;background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025));backdrop-filter:blur(34px) saturate(160%);-webkit-backdrop-filter:blur(34px) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 16px 42px rgba(0,0,0,.22)}
+.preview-panel.show{display:block}
+.preview-panel pre{max-height:340px;overflow:auto;overscroll-behavior:contain;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--ink);margin:10px 0 0;opacity:.9}
+.repo-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.about-block{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.about-block p{margin:0 0 10px;color:var(--mute);font-size:.88rem;line-height:1.6}
+.dev-card{
+  margin-top:20px;padding:18px 16px;border-radius:18px;text-align:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)
+}
+.dev-card img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.dev-card .dev-name{margin-top:12px;font-weight:700;font-size:.95rem;letter-spacing:.02em}
+.dev-card .dev-label{font-size:.75rem;color:var(--mute);margin-top:2px}
+.skel-wrap{display:none;margin-top:8px}
+.skel-wrap.show{display:block}
+.skel{
+  height:14px;border-radius:8px;background:var(--skel);margin-bottom:10px;
+  background-image:linear-gradient(90deg,var(--skel) 0%,var(--skel-shine) 50%,var(--skel) 100%);
+  background-size:200% 100%;animation:shimmer 1.2s ease-in-out infinite
+}
+.skel.w60{width:60%}.skel.w80{width:80%}.skel.w40{width:40%}.skel.h36{height:36px;border-radius:12px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.toast-wrap{
+  position:fixed;z-index:2000;top:18px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:8px;pointer-events:none;width:min(92%,360px)
+}
+.toast{
+  pointer-events:auto;padding:12px 16px;border-radius:14px;
+  background:var(--toast-bg);border:1px solid var(--line);
+  box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.1);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  font-size:.88rem;display:flex;align-items:center;gap:10px;
+  animation:toastIn .3s ease both;color:var(--ink)
+}
+.toast.out{animation:toastOut .25s ease both}
+.toast i{font-size:1rem;flex-shrink:0}
+.toast.ok i{color:var(--ok)}.toast.bad i{color:var(--bad)}.toast.info i{color:var(--acc-solid)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px)}}
+.rd-nav{
+  position:fixed;z-index:1000;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);width:min(92%,380px);height:74px;padding:6px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;
+  border-radius:28px;border:1px solid rgba(255,255,255,.12);
+  border-top-color:rgba(255,255,255,.2);
+  background:linear-gradient(145deg,rgba(255,255,255,.19),rgba(255,255,255,.055) 28%,rgba(7,10,16,.56) 70%,rgba(255,255,255,.10)),var(--nav-bg);
+  box-shadow:0 24px 60px rgba(0,0,0,.48),inset 0 2px 0 rgba(255,255,255,.34),inset 0 -2px 0 rgba(255,255,255,.07),0 0 28px rgba(180,210,255,.08);
+  -webkit-backdrop-filter:blur(34px) saturate(1.6);backdrop-filter:blur(34px) saturate(1.6);
+  isolation:isolate;
+}
+.rd-nav::before{
+  content:"";position:absolute;inset:1px;border-radius:27px;pointer-events:none;z-index:-1;
+  background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 26%,transparent 70%,rgba(255,255,255,.08)),radial-gradient(ellipse at 50% -10%,rgba(255,255,255,.18),transparent 58%);
+}
+.rd-nav-lens{
+  position:absolute;left:6px;top:6px;width:calc((100% - 12px)/3);height:calc(100% - 12px);
+  border-radius:22px;pointer-events:none;z-index:0;
+  background:linear-gradient(150deg,rgba(255,255,255,.30),rgba(255,255,255,.12) 32%,rgba(255,255,255,.045) 68%,rgba(255,255,255,.16));
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.42),inset 0 -10px 18px rgba(255,255,255,.045),0 5px 22px rgba(0,0,0,.22),0 0 18px rgba(220,235,255,.08);
+  backdrop-filter:blur(5px) saturate(1.5);-webkit-backdrop-filter:blur(5px) saturate(1.5);
+  transform:translateX(var(--nav-x,0%));transition:transform .42s cubic-bezier(.22,1,.36,1)
+}
+.rd-nav button{
+  position:relative;z-index:1;min-width:0;padding:0;border:0;background:transparent;box-shadow:none;
+  border-radius:21px;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;font:600 .68rem 'Plus Jakarta Sans',sans-serif;letter-spacing:.02em;transition:color .25s,transform .25s;
+}
+.rd-nav button i{font-size:1.2rem;transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.rd-nav button.active{color:var(--ink)}
+.rd-nav button.active i{transform:translateY(-1px) scale(1.1);filter:drop-shadow(0 0 8px rgba(148,163,184,.3))}
+.rd-nav button:active{transform:scale(.94)}
+.rd-nav button:focus-visible{outline:2px solid var(--acc-solid);outline-offset:-4px}
+/* Cinematic glass upload progress modal */
+.upload-overlay{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:22px;background:rgba(0,0,0,.38);backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);opacity:0;visibility:hidden;transition:opacity .32s ease,visibility .32s ease}
+.upload-overlay.show{opacity:1;visibility:visible}
+.upload-dialog{position:relative;width:min(100%,560px);padding:30px;border-radius:34px;border:1px solid rgba(255,255,255,.2);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.025) 28%,rgba(8,8,10,.92) 70%),rgba(9,10,13,.88);box-shadow:0 35px 100px rgba(0,0,0,.72),inset 0 1.5px 0 rgba(255,255,255,.25),0 0 70px rgba(220,230,255,.08);backdrop-filter:blur(38px) saturate(1.5);-webkit-backdrop-filter:blur(38px) saturate(1.5);display:grid;grid-template-columns:76px 1fr;gap:18px;align-items:center;transform:translateY(14px) scale(.98);transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+.upload-overlay.show .upload-dialog{transform:translateY(0) scale(1)}
+.upload-close{position:absolute;right:18px;top:18px;width:34px;height:34px;border-radius:50%;padding:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:23px;line-height:1}
+.upload-close:disabled{opacity:.45;cursor:default}
+.upload-file-icon{width:76px;height:76px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 12px 30px rgba(0,0,0,.28);font-size:34px;color:#e9edf5}
+.upload-file-meta{min-width:0;display:flex;flex-direction:column;gap:5px;padding-right:30px}.upload-file-meta strong{font-size:1.2rem;overflow-wrap:anywhere}.upload-file-meta span{color:var(--mute);font-size:.9rem}
+.upload-status{grid-column:1/-1;margin-top:8px;padding:20px;border-radius:24px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(125deg,rgba(255,255,255,.1),rgba(0,0,0,.46) 62%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.upload-status-line{display:flex;align-items:center;gap:11px;margin-bottom:15px}.upload-status-line strong{margin-left:auto;font-variant-numeric:tabular-nums}.upload-spinner{width:25px;height:25px;border:3px solid rgba(255,255,255,.16);border-top-color:#fff;border-right-color:rgba(255,255,255,.7);border-radius:50%;animation:rdSpin .8s linear infinite;flex-shrink:0}.upload-spinner.done{animation:none;border:0;width:25px;height:25px}.upload-spinner.done:after{content:'✓';font-size:25px;color:#6ee7b7}.upload-track{height:9px;border-radius:99px;background:rgba(255,255,255,.13);overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,.5)}.upload-track i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#aab4c4,#fff 60%,#dceaff);box-shadow:0 0 14px rgba(255,255,255,.72);transition:width .3s ease}.upload-status small{display:block;margin-top:12px;color:var(--mute)}
+@keyframes rdSpin{to{transform:rotate(360deg)}}
+@media(max-width:520px){.upload-dialog{padding:24px 20px;border-radius:28px;grid-template-columns:58px 1fr;gap:13px}.upload-file-icon{width:58px;height:58px;border-radius:18px;font-size:27px}.upload-file-meta strong{font-size:1rem}.upload-status{padding:16px;border-radius:20px}}
+@media(prefers-reduced-motion:reduce){.upload-spinner{animation:none}.upload-overlay,.upload-dialog,.upload-track i{transition:none}}
+@media(max-width:520px){
+  main{padding:24px 12px 36px}
+  .hero-title{gap:10px}
+  .hero-title h1{font-size:2rem}
+  .github-brand{padding:9px 11px;gap:6px;font-size:.8rem}
+  .github-brand .external{display:none}
+  .glass{padding:18px;border-radius:22px}
+  .rd-nav{height:70px;width:calc(100% - 28px);bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  .theme-btn{width:38px;height:38px;border-radius:12px}
+  .tech-brand{padding:8px 10px;font-size:.72rem}
+  .tech-brand span.label{display:none}
+}
+@media(max-width:370px){.hero-title{flex-direction:column}.topbar{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){
+  .orb{animation:none}
+  .rd-nav-lens,.rd-nav button i,.page,.skel{transition:none;animation:none}
+  .page.active{animation:none}
+  *{transition:none!important}
+}
+::selection{background:rgba(148,163,184,.3);color:var(--ink)}
+
+/* ===== header ala tools-collection + hero ===== */
+.bg-stage canvas{opacity:1}
+.topbar{margin-bottom:46px;padding:2px 0;position:relative;z-index:20}
+.brand{gap:12px}
+.gh-mark{flex:none;display:block;filter:drop-shadow(0 4px 14px rgba(255,255,255,.12))}
+.brand-text{line-height:1}
+.brand-text strong{font-size:1.9rem;font-weight:800;letter-spacing:-.045em;line-height:.95}
+.brand-text small{margin-top:4px;font-size:.58rem;font-weight:800;letter-spacing:.07em;color:var(--ink);opacity:.9}
+.menu-wrap{position:relative}
+.burger{width:46px;height:46px;padding:0;border-radius:14px;background:transparent;border:0;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.burger span{display:block;width:30px;height:3px;border-radius:3px;background:var(--ink);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .2s}
+.burger[aria-expanded="true"] span:nth-child(1){transform:translateY(9px) rotate(45deg)}
+.burger[aria-expanded="true"] span:nth-child(2){opacity:0}
+.burger[aria-expanded="true"] span:nth-child(3){transform:translateY(-9px) rotate(-45deg)}
+.menu-panel{
+  position:absolute;right:0;top:calc(100% + 10px);z-index:60;min-width:200px;padding:8px;
+  display:flex;flex-direction:column;gap:6px;border-radius:20px;
+  background:linear-gradient(160deg,rgba(22,22,28,.94),rgba(8,8,12,.96));
+  border:1px solid var(--line-strong);border-top-color:rgba(255,255,255,.22);
+  box-shadow:0 24px 60px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.14);
+  backdrop-filter:blur(28px) saturate(150%);-webkit-backdrop-filter:blur(28px) saturate(150%);
+  opacity:0;pointer-events:none;transform:translateY(-8px) scale(.98);transform-origin:top right;
+  transition:opacity .2s,transform .25s cubic-bezier(.2,.8,.2,1)
+}
+.menu-panel.open{opacity:1;pointer-events:auto;transform:none}
+[data-theme="light"] .menu-panel{background:linear-gradient(160deg,rgba(255,255,255,.96),rgba(241,245,249,.97))}
+.menu-panel .theme-btn{width:100%;height:auto;padding:11px 14px;gap:10px;justify-content:flex-start;border-radius:14px;font:600 .85rem 'Plus Jakarta Sans',sans-serif}
+.menu-panel .tech-brand{width:100%;padding:11px 14px;border-radius:14px;font-size:.85rem}
+.menu-panel .tech-brand span.label{display:inline}
+.hero-title{margin-bottom:28px}
+.hero-title .eyebrow{font-family:ui-monospace,'JetBrains Mono',Menlo,monospace;font-size:.74rem;letter-spacing:.16em;margin:0 0 18px;font-weight:500;color:var(--mute)}
+.hero-title h1{font-family:'Source Serif 4',Georgia,'Times New Roman',serif;font-weight:500;font-size:clamp(2.7rem,11vw,4.4rem);line-height:1.02;letter-spacing:-.03em;margin:0 0 20px}
+.hero-title p:not(.eyebrow){font-size:1.05rem;line-height:1.7;color:var(--mute);max-width:36ch}
+/* Cinematic glass upload progress modal */
+.upload-overlay{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:22px;background:rgba(0,0,0,.38);backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);opacity:0;visibility:hidden;transition:opacity .32s ease,visibility .32s ease}
+.upload-overlay.show{opacity:1;visibility:visible}
+.upload-dialog{position:relative;width:min(100%,560px);padding:30px;border-radius:34px;border:1px solid rgba(255,255,255,.2);background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.025) 28%,rgba(8,8,10,.92) 70%),rgba(9,10,13,.88);box-shadow:0 35px 100px rgba(0,0,0,.72),inset 0 1.5px 0 rgba(255,255,255,.25),0 0 70px rgba(220,230,255,.08);backdrop-filter:blur(38px) saturate(1.5);-webkit-backdrop-filter:blur(38px) saturate(1.5);display:grid;grid-template-columns:76px 1fr;gap:18px;align-items:center;transform:translateY(14px) scale(.98);transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+.upload-overlay.show .upload-dialog{transform:translateY(0) scale(1)}
+.upload-close{position:absolute;right:18px;top:18px;width:34px;height:34px;border-radius:50%;padding:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:23px;line-height:1}
+.upload-close:disabled{opacity:.45;cursor:default}
+.upload-file-icon{width:76px;height:76px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 12px 30px rgba(0,0,0,.28);font-size:34px;color:#e9edf5}
+.upload-file-meta{min-width:0;display:flex;flex-direction:column;gap:5px;padding-right:30px}.upload-file-meta strong{font-size:1.2rem;overflow-wrap:anywhere}.upload-file-meta span{color:var(--mute);font-size:.9rem}
+.upload-status{grid-column:1/-1;margin-top:8px;padding:20px;border-radius:24px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(125deg,rgba(255,255,255,.1),rgba(0,0,0,.46) 62%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.upload-status-line{display:flex;align-items:center;gap:11px;margin-bottom:15px}.upload-status-line strong{margin-left:auto;font-variant-numeric:tabular-nums}.upload-spinner{width:25px;height:25px;border:3px solid rgba(255,255,255,.16);border-top-color:#fff;border-right-color:rgba(255,255,255,.7);border-radius:50%;animation:rdSpin .8s linear infinite;flex-shrink:0}.upload-spinner.done{animation:none;border:0;width:25px;height:25px}.upload-spinner.done:after{content:'✓';font-size:25px;color:#6ee7b7}.upload-track{height:9px;border-radius:99px;background:rgba(255,255,255,.13);overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,.5)}.upload-track i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#aab4c4,#fff 60%,#dceaff);box-shadow:0 0 14px rgba(255,255,255,.72);transition:width .3s ease}.upload-status small{display:block;margin-top:12px;color:var(--mute)}
+@keyframes rdSpin{to{transform:rotate(360deg)}}
+@media(max-width:520px){.upload-dialog{padding:24px 20px;border-radius:28px;grid-template-columns:58px 1fr;gap:13px}.upload-file-icon{width:58px;height:58px;border-radius:18px;font-size:27px}.upload-file-meta strong{font-size:1rem}.upload-status{padding:16px;border-radius:20px}}
+@media(prefers-reduced-motion:reduce){.upload-spinner{animation:none}.upload-overlay,.upload-dialog,.upload-track i{transition:none}}
+@media(max-width:520px){.hero-title h1{font-size:clamp(2.7rem,13.5vw,3.6rem)}.brand-text strong{font-size:1.75rem}}
+:where(i[class*="fa-"]){display:inline-block;width:1em;height:1em;vertical-align:-.14em;font-style:normal;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat;--ic:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27/%3E")}
+.fa-moon{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'/%3E%3C/svg%3E")}
+.fa-sun{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'/%3E%3C/svg%3E")}
+.fa-lock{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E")}
+.fa-folder-lock{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Crect x='9' y='12.5' width='6' height='4.5' rx='1'/%3E%3Cpath d='M10 12.5v-1a2 2 0 0 1 4 0v1'/%3E%3C/svg%3E")}
+.fa-folder-tree{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h5v4H4zM14 10h6v4h-6zM14 17h6v4h-6z'/%3E%3Cpath d='M6.5 8v11H14M6.5 12H14'/%3E%3C/svg%3E")}
+.fa-folder{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3C/svg%3E")}
+.fa-shield-halved{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z'/%3E%3Cpath d='M12 3v18'/%3E%3C/svg%3E")}
+.fa-cloud-arrow-up{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 18.5a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6 10.5a4 4 0 0 0 1 8'/%3E%3Cpath d='M12 21v-9M8.5 15.5L12 12l3.5 3.5'/%3E%3C/svg%3E")}
+.fa-gear{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z'/%3E%3C/svg%3E")}
+.fa-check{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}
+.fa-xmark{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E")}
+.fa-triangle-exclamation{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l10 18H2z'/%3E%3Cpath d='M12 10v5M12 18v.5'/%3E%3C/svg%3E")}
+.fa-star{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l2.7 5.8 6.3.8-4.6 4.3 1.2 6.3L12 17l-5.6 3.2 1.2-6.3L3 9.6l6.3-.8z'/%3E%3C/svg%3E")}
+.fa-code-branch{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='5' r='2'/%3E%3Ccircle cx='6' cy='19' r='2'/%3E%3Ccircle cx='18' cy='8' r='2'/%3E%3Cpath d='M6 7v10M18 10c0 3.5-4 4-12 7'/%3E%3C/svg%3E")}
+.fa-file{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5'/%3E%3C/svg%3E")}
+.fa-file-code{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M10 13l-2 2 2 2M14 13l2 2-2 2'/%3E%3C/svg%3E")}
+.fa-file-lines{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h6'/%3E%3C/svg%3E")}
+.fa-file-image{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M7.5 18l3-3.5 2 2 2-2 2 3.5'/%3E%3Ccircle cx='10' cy='12' r='1'/%3E%3C/svg%3E")}
+.fa-github{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z'/%3E%3C/svg%3E")}
+header{position:relative;z-index:2}
+</style>
+</head>
+<body>
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+<main>
+<div class="bg-stage" aria-hidden="true">
+  <canvas id="bgCanvas"></canvas>
+  <div class="bg-vignette"></div>
+</div>
+<header>
+  <div class="topbar">
+    <a class="brand" href="#" onclick="return false" aria-label="RepoDrop">
+      <svg class="gh-mark" viewBox="0 0 24 24" fill="currentColor" width="46" height="46" aria-hidden="true"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      <span class="brand-text">
+        <strong>RepoDrop</strong>
+        <small>GITHUB UPLOADER</small>
+      </span>
+    </a>
+    <div class="menu-wrap">
+      <button type="button" class="burger" id="burger" aria-label="Buka menu" aria-expanded="false" aria-controls="menuPanel"><span></span><span></span><span></span></button>
+      <div class="menu-panel" id="menuPanel">
+        <a class="tech-brand" href="https://github.com/" target="_blank" rel="noopener noreferrer" title="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          <span class="label">GitHub</span>
+        </a>
+        <a class="tech-brand" href="https://vercel.com/" target="_blank" rel="noopener noreferrer" title="Vercel">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3l10 18H2z"/></svg>
+          <span class="label">Vercel</span>
+        </a>
+        <a class="tech-brand" href="https://nextjs.org/" target="_blank" rel="noopener noreferrer" title="Next.js">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.572 0c-.176 0-.339.034-.488.1L.752 5.2A1.07 1.07 0 000 6.158v11.684c0 .382.2.736.528.958l10.332 5.1c.15.066.312.1.488.1s.339-.034.488-.1l10.332-5.1c.328-.222.528-.576.528-.958V6.158a1.07 1.07 0 00-.528-.958L12.06.1a1.07 1.07 0 00-.488-.1zm.097 1.3l9.06 4.47-3.97 1.96-9.06-4.47 3.97-1.96zm-9.66 5.07l9.06 4.47v8.94l-9.06-4.47V6.37zm10.16 13.41v-8.94l9.06-4.47v8.94l-9.06 4.47z"/></svg>
+          <span class="label">Next.js</span>
+        </a>
+        <a class="tech-brand" href="https://react.dev/" target="_blank" rel="noopener noreferrer" title="React">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="10" ry="4.2"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(120 12 12)"/></svg>
+          <span class="label">React</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="hero-title">
+    <div>
+      <p class="eyebrow">UPLOAD · COMMIT · SHIP</p>
+      <h1>Your files,<br>ready to launch</h1>
+      <p>Upload files and folders directly to your GitHub repository. No Git or terminal required.</p>
+    </div>
+  </div>
+</header>
+
+<div class="page active" id="page-upload">
+<section class="glass" id="s3">
+  <div class="page-content" id="content-upload">
+    <h2>Upload Files &amp; Folders</h2>
+    <div class="drop" id="drop">
+      <strong>Drag files or folders here</strong>
+      <small>Folder structure will be preserved</small>
+      <div class="row"><button type="button" class="ghost" id="pf">Choose Files</button><button type="button" class="ghost" id="pd">Choose Folder</button></div>
+    </div>
+    <input type="file" id="fi" multiple hidden>
+    <input type="file" id="di" webkitdirectory hidden>
+    <div class="sum"><span id="cnt">No files selected</span><button type="button" class="ghost" id="clr" style="padding:4px 12px" hidden>Clear All</button></div>
+    <div class="list" id="list" hidden></div>
+    <div class="preflight" id="preflight" aria-live="polite">
+      <div class="preflight-head">
+        <strong><i class="fa-solid fa-shield-halved"></i> File Security Check</strong>
+        <small id="preflightText">Choose Files untuk mulai memeriksa.</small>
+      </div>
+      <div class="preflight-stats" id="preflightStats"></div>
+    </div>
+    <div class="preview-panel" id="previewPanel">
+      <div class="preflight-head">
+        <strong id="previewTitle">File Preview</strong>
+        <button type="button" class="ghost" id="closePreview" style="padding:5px 10px">Close</button>
+      </div>
+      <small id="previewInfo"></small>
+      <pre id="previewContent"></pre>
+    </div>
+    <label for="msg">Commit Message</label>
+    <input id="msg" type="text" value="Upload via RepoDrop">
+    <div class="row" style="margin-top:16px"><button type="button" id="go" disabled>Upload to GitHub</button></div>
+    <div class="bar" id="bar"><i id="fill"></i></div>
+    <div id="log"></div>
+    <div class="note" id="n3"></div>
+  </div>
+</section>
+</div>
+
+<div class="page" id="page-repo">
+<section class="glass" id="s2">
+  <div class="page-content" id="content-repo">
+    <h2>Select Repository</h2>
+    <label for="repo">Repository</label>
+    <select id="repo"></select>
+    <div class="skel-wrap" id="repoSkel">
+      <div class="skel h36"></div>
+      <div class="skel w80"></div>
+      <div class="skel w60"></div>
+      <div class="skel w40"></div>
+    </div>
+    <div class="row repo-fields">
+      <div><label for="branch">Branch</label><input id="branch" type="text" placeholder="main"></div>
+      <div><label for="dir">Destination Folder (optional)</label><input id="dir" type="text" placeholder="e.g. assets/images"></div>
+    </div>
+    <label for="nrepo">Or Create a New Repository</label>
+    <div class="row">
+      <input id="nrepo" type="text" inputmode="text" enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="new-repository-name" style="flex:2">
+      <button type="button" class="ghost" id="mk" style="flex:1">Create</button>
+    </div>
+    <div class="chk"><input type="checkbox" id="priv"><label for="priv" style="margin:0">Make repository private</label></div>
+    <div class="note" id="n2"></div>
+    <div class="repo-meta" id="repoMeta" aria-live="polite"></div>
+  </div>
+</section>
+</div>
+
+<div class="page" id="page-setting">
+<section class="glass" id="s1">
+  <h2>Token Settings</h2>
+  <label for="tok">Personal access token</label>
+  <input id="tok" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+  <div class="chk"><input type="checkbox" id="remember"><label for="remember" style="margin:0">Remember token on this device</label></div>
+  <div class="row" style="margin-top:14px"><button type="button" id="login">Connect</button></div>
+  <p class="hint">Create a token on <a href="https://github.com/settings/tokens/new?scopes=repo&description=RepoDrop" target="_blank" rel="noopener">GitHub</a> with <b>repo</b> permissions (or Contents: read &amp; write for fine-grained tokens). Your token is only sent to api.github.com.</p>
+  <div class="note" id="n1"></div>
+  <div class="me" id="me" hidden>
+    <img id="av" alt="">
+    <div style="flex:1"><b id="un"></b><small id="un2"></small></div>
+    <button type="button" class="ghost" id="out">Disconnect</button>
+  </div>
+  <div class="about-block">
+    <h2 style="margin-bottom:10px">About RepoDrop</h2>
+    <p>RepoDrop makes it easy to upload files and folders directly to a GitHub repository without installing Git or opening a terminal. Everything is organized into a single commit.</p>
+    <p>Dibangun dengan <b>Next.js</b> &amp; <b>React</b>. Connect with a Personal Access Token, choose or create a repository, select your files or folders, and upload. Fast and convenient, right from your browser.</p>
+  </div>
+  <div class="dev-card">
+    <img src="https://i.imgur.com/GT4z6Jm.jpeg" alt="SALL DEC7TY" width="72" height="72">
+    <div class="dev-name">Developed: SALL DEC7TY</div>
+    <div class="dev-label">RepoDrop · Next.js · React · liquid glass</div>
+  </div>
+</section>
+</div>
+</main>
+
+<audio id="rdMusic" src="https://www.image2url.com/r2/default/files/1792913959715-195db757-b7c5-4d96-a67e-fdec64e2c97f.mp3" preload="auto" loop playsinline></audio>
+
+<div class="upload-overlay" id="uploadOverlay" aria-live="polite" aria-hidden="true">
+  <div class="upload-dialog" role="status" aria-label="GitHub Upload Progress">
+    <button class="upload-close" id="uploadClose" type="button" aria-label="Close progress" disabled>×</button>
+    <div class="upload-file-icon"><i class="fa-brands fa-github"></i></div>
+    <div class="upload-file-meta"><strong id="uploadTitle">Project upload</strong><span id="uploadSub">Preparing files…</span></div>
+    <div class="upload-status"><div class="upload-status-line"><span class="upload-spinner" id="uploadSpinner"></span><span id="uploadStatusText">Uploading to GitHub…</span><strong id="uploadPercent">0%</strong></div><div class="upload-track"><i id="uploadTrackFill"></i></div><small id="uploadDetail">Waiting to start</small></div>
+  </div>
+</div>
+
+<nav class="rd-nav" id="rdNav" aria-label="Navigasi RepoDrop">
+  <span class="rd-nav-lens" id="rdNavLens" aria-hidden="true"></span>
+  <button type="button" class="active" data-page="page-upload" aria-label="Upload file" title="Upload">
+    <i class="fa-solid fa-cloud-arrow-up"></i><span>Upload</span>
+  </button>
+  <button type="button" data-page="page-repo" aria-label="Repository" title="Repository">
+    <i class="fa-solid fa-folder-tree"></i><span>Repository</span>
+  </button>
+  <button type="button" data-page="page-setting" aria-label="Settings" title="Settings">
+    <i class="fa-solid fa-gear"></i><span>Settings</span>
+  </button>
+</nav>
+
+<script>
+const $=id=>document.getElementById(id);
+document.querySelectorAll('.glass').forEach(card=>{
+  card.addEventListener('pointermove',e=>{
+    const r=card.getBoundingClientRect();
+    card.style.setProperty('--mx',`${e.clientX-r.left}px`);
+    card.style.setProperty('--my',`${e.clientY-r.top}px`);
+  },{passive:true});
+});
+
+function toast(msg,type='info',ms=2800){
+  const wrap=$('toastWrap');
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  const icon=type==='ok'?'fa-circle-check':type==='bad'?'fa-circle-xmark':'fa-circle-info';
+  el.innerHTML=`<i class="fa-solid ${icon}"></i><span>${msg}</span>`;
+  wrap.append(el);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),260)},ms);
+}
+
+document.documentElement.setAttribute('data-theme','dark');
+
+(function initRepoDropMusic(){
+  const music=$('rdMusic');
+  if(!music)return;
+  music.volume=0.32;
+  let started=false;
+  async function startMusic(){
+    if(started)return;
+    try{await music.play();started=true;
+      ['pointerdown','touchstart','click','keydown'].forEach(evt=>document.removeEventListener(evt,startMusic,true));
+    }catch(_){}
+  }
+  startMusic();
+  ['pointerdown','touchstart','click','keydown'].forEach(evt=>document.addEventListener(evt,startMusic,{capture:true,passive:true}));
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden && started && music.paused) music.play().catch(()=>{});
+  });
+})();
+
+function setAuthUI(){}
+
+(function initRepoDropDock(){
+  const nav=$('rdNav');
+  if(!nav)return;
+  const buttons=[...nav.querySelectorAll('button[data-page]')];
+  const lens=$('rdNavLens');
+  function showPage(pageId){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    void document.body.offsetWidth;
+    const page=$(pageId);if(page)page.classList.add('active');
+  }
+  function activate(btn){
+    buttons.forEach((b,i)=>b.classList.toggle('active',b===btn));
+    const idx=buttons.indexOf(btn);
+    if(lens)lens.style.setProperty('--nav-x',`calc(${idx*100}% + ${idx*3}px)`);
+    showPage(btn.dataset.page);
+    // never auto-focus fields (causes mobile scroll-to-top / keyboard jump)
+  }
+  buttons.forEach(btn=>btn.addEventListener('click',()=>activate(btn)));
+  // Mobile browsers resize the viewport while scrolling (address bar hides/shows).
+  // Update only the dock indicator; never re-render the active page on resize.
+  function syncLens(){
+    const active=buttons.find(b=>b.classList.contains('active'));
+    const idx=buttons.indexOf(active);
+    if(lens && idx>=0) lens.style.setProperty('--nav-x',`calc(${idx*100}% + ${idx*3}px)`);
+  }
+  window.addEventListener('resize',syncLens,{passive:true});
+})();
+
+const API='https://api.github.com';
+const MAX=50*1048576;
+const SECRET_RE=/(^|\/)(\.env(?!\.example$)|\.npmrc|\.pypirc|id_rsa|id_ed25519|credentials\.json|service-account.*\.json|.*\.(pem|p12|pfx|key))$/i;
+let token='',repos=[],files=new Map(),busy=false;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
+const seg=p=>p.split('/').map(encodeURIComponent).join('/');
+const note=(id,t,c='')=>{const e=$(id);e.className='note '+c;e.innerHTML=t};
+const log=(t,cls='')=>{const d=document.createElement('div');if(cls)d.className=cls;d.innerHTML=t;$('log').append(d);$('log').scrollTop=1e9};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function normalizePath(path){return String(path||'').replace(/\\/g,'/').replace(/^\.\//,'').trim()}
+function inspectFile(path,file){
+  const p=normalizePath(path);
+  if(!p || p.startsWith('/') || /^[a-z]:\//i.test(p) || p.split('/').some(part=>part==='..' || part===''))
+    return {path:p||String(path||'(unnamed)'),level:'fail',message:'Unsafe or invalid path'};
+  if(p.length>240) return {path:p,level:'fail',message:'Path is too long (maximum 240 characters)'};
+  if(file.size>MAX) return {path:p,level:'fail',message:'File exceeds the 50 MB safety limit'};
+  if(SECRET_RE.test(p)) return {path:p,level:'warn',message:'Filename may contain a secret or token'};
+  return {path:p,level:'pass',message:'Passed initial checks'};
+}
+function updatePreflight(){
+  const entries=[...files.entries()];
+  const errors=entries.filter(([p,f])=>inspectFile(p,f).level==='fail').length;
+  const warnings=entries.filter(([p,f])=>inspectFile(p,f).level==='warn').length;
+  const total=entries.reduce((sum,[,f])=>sum+f.size,0);
+  $('preflightText').textContent=entries.length?`${entries.length} file diperiksa · ${fmt(total)}`:'Choose Files untuk mulai memeriksa.';
+  $('preflightStats').innerHTML=entries.length
+    ? `<span class="pill pass"><i class="fa-solid fa-check"></i> ${entries.length-errors-warnings} lolos</span><span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> ${warnings} peringatan</span><span class="pill fail"><i class="fa-solid fa-xmark"></i> ${errors} masalah</span>`
+    : '<span class="pill">Validasi otomatis aktif</span>';
+  $('go').disabled=!entries.length||busy||errors>0;
+}
+
+async function gh(p,o={},tries=3){
+  for(let i=0;i<tries;i++){
+    const r=await fetch(API+p,{...o,headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(o.body?{'Content-Type':'application/json'}:{})}});
+    if(r.ok)return r.status===204?null:r.json();
+    if([429,502,503].includes(r.status)&&i<tries-1){await sleep(1500*(i+1));continue}
+    let m='';try{m=(await r.json()).message}catch{}
+    const e=new Error(m||r.statusText);e.status=r.status;throw e;
+  }
+}
+
+async function login(){
+  token=$('tok').value.trim();
+  if(!token)return note('n1','Enter your token first.','bad');
+  note('n1','Validating token…');
+  try{
+    const me=await gh('/user');
+    $('av').src=me.avatar_url;$('un').textContent=me.name||me.login;$('un2').textContent='@'+me.login;
+    $('me').hidden=false;
+    try{$('remember').checked?localStorage.setItem('rd_token',token):localStorage.removeItem('rd_token')}catch{}
+    note('n1','');
+    toast('Connected as @'+me.login,'ok');
+    await loadRepos();
+    setAuthUI(true);
+  }catch(e){
+    token='';$('me').hidden=true;setAuthUI(false);
+    const msg=e.status===401?'Invalid or expired token.':'Connection failed: '+esc(e.message);
+    note('n1',msg,'bad');toast(msg,'bad');
+  }
+}
+async function loadRepos(){
+  note('n2','Loading repositories…');
+  $('repoSkel')?.classList.add('show');
+  $('repo').style.display='none';
+  repos=[];
+  try{
+    for(let p=1;p<=10;p++){
+      const r=await gh(`/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member&page=${p}`);
+      repos.push(...r);if(r.length<100)break;
+    }
+    fillRepos();
+    note('n2',repos.length?'':'No repositories found. Create one below.');
+  }finally{
+    $('repoSkel')?.classList.remove('show');
+    $('repo').style.display='';
+  }
+}
+function fillRepos(sel){
+  let idx=0;
+  try{
+    const last=localStorage.getItem('rd_last_repo');
+    if(last){const found=repos.findIndex(r=>r.full_name===last);if(found>=0)idx=found}
+  }catch{}
+  if(typeof sel==='number')idx=sel;
+  $('repo').innerHTML=repos.map((r,i)=>`<option value="${i}">${esc(r.full_name)}${r.private?' 🔒':''}</option>`).join('');
+  $('repo').value=idx;pickRepo();
+}
+function pickRepo(){
+  const r=repos[$('repo').value];
+  if(r){
+    $('branch').value=r.default_branch||'';
+    try{localStorage.setItem('rd_last_repo',r.full_name)}catch{}
+    $('repoMeta').innerHTML=`<a href="${esc(r.html_url)}" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> Buka repository</a><span class="pill">${r.private?'Private':'Public'}</span><span class="pill"><i class="fa-solid fa-star"></i> ${Number(r.stargazers_count||0)} stars</span><span class="pill"><i class="fa-solid fa-code-branch"></i> ${Number(r.forks_count||0)} forks</span><span class="pill">Branch: ${esc(r.default_branch||'—')}</span>`;
+  } else {
+    $('branch').value='';
+    $('repoMeta').innerHTML='';
+  }
+}
+async function mk(ev){
+  if(ev){ev.preventDefault();ev.stopPropagation()}
+  if(needLogin())return;
+  const input=$('nrepo');
+  const name=(input.value||'').trim();
+  if(!name){
+    note('n2','Enter a name for the new repository.','bad');
+    // keep soft keyboard without scrolling page to top
+    setTimeout(()=>{try{input.focus({preventScroll:true})}catch(_){input.focus()}},30);
+    return;
+  }
+  const y=window.scrollY;
+  $('mk').disabled=true;
+  try{
+    const r=await gh('/user/repos',{method:'POST',body:JSON.stringify({name,private:$('priv').checked,auto_init:true})});
+    repos.unshift(r);
+    // stay on repository page; do not change active dock/page
+    fillRepos(0);
+    input.value='';
+    note('n2','Repository '+esc(r.full_name)+' created.','ok');
+    toast('Repository '+r.full_name+' created successfully','ok');
+  }catch(e){
+    note('n2','Failed to create repository: '+esc(e.message),'bad');
+    toast('Failed to create repository: '+(e.message||''),'bad',3500);
+  }
+  $('mk').disabled=false;
+  // restore scroll so mobile does not jump to top
+  requestAnimationFrame(()=>{window.scrollTo(0,y)});
+}
+
+function add(list){
+  let skipped=0,duplicates=0;
+  for(const entry of list){
+    const file=entry.file;if(!file)continue;
+    const path=normalizePath(entry.path||file.name);
+    if(/(^|\/)(\.DS_Store|Thumbs\.db)$/.test(path)||/(^|\/)\.git\//.test(path)){skipped++;continue}
+    if(files.has(path))duplicates++;
+    files.set(path,file);
+  }
+  if(skipped)note('n3',`${skipped} system files skipped (e.g. .DS_Store / .git).`,'');
+  else if(duplicates)note('n3',`${duplicates} duplicate paths found; the last file replaces the previous one.`,'');
+  else note('n3','');
+  render();
+  // Show a useful text/code preview immediately after selection. Archives (ZIP, etc.)
+  // stay intact and are not silently unpacked or modified.
+  const firstPreviewable=[...files.entries()].find(([path,file])=>file.size<=1024*1024 && /\.(txt|md|json|js|jsx|ts|tsx|css|html|xml|yml|yaml|toml|csv|svg|py|java|kt|dart|sh|sql|env\.example)$/i.test(path));
+  if(firstPreviewable) showPreview(firstPreviewable[0],false);
+}
+function fileIcon(name){
+  const n=name.toLowerCase();
+  if(n==='package.json'||n==='package-lock.json'||n.endsWith('.json')) return {cls:'file-json',icon:'fa-file-code'};
+  if(n.endsWith('.tsx')||n.endsWith('.ts')) return {cls:'file-ts',icon:'fa-file-code'};
+  if(n.endsWith('.jsx')||n.endsWith('.js')||n.endsWith('.mjs')||n.endsWith('.cjs')) return {cls:'file-js',icon:'fa-file-code'};
+  if(n.endsWith('.css')||n.endsWith('.scss')||n.endsWith('.sass')) return {cls:'file-css',icon:'fa-file-code'};
+  if(n.endsWith('.md')||n.endsWith('.mdx')) return {cls:'file-md',icon:'fa-file-lines'};
+  if(n.endsWith('.png')||n.endsWith('.jpg')||n.endsWith('.jpeg')||n.endsWith('.gif')||n.endsWith('.svg')||n.endsWith('.webp')||n.endsWith('.ico')) return {cls:'file-img',icon:'fa-file-image'};
+  if(n.startsWith('.')||n.endsWith('.yml')||n.endsWith('.yaml')||n.endsWith('.toml')||n.endsWith('.env')||n.endsWith('.env.example')||n==='dockerfile'||n.endsWith('.config.js')||n.endsWith('.config.mjs')||n.endsWith('.config.ts')) return {cls:'file-cfg',icon:'fa-gear'};
+  if(n.endsWith('.lock')||n==='yarn.lock'||n==='pnpm-lock.yaml') return {cls:'file-lock',icon:'fa-lock'};
+  if(n.endsWith('.html')||n.endsWith('.htm')) return {cls:'file-default',icon:'fa-file-code'};
+  if(n.endsWith('.py')) return {cls:'file-default',icon:'fa-file-code'};
+  return {cls:'file-default',icon:'fa-file'};
+}
+function buildTree(paths){
+  // paths: array of [path, file]
+  const root={name:'',kids:new Map(),files:[]};
+  for(const [path,file] of paths){
+    const parts=path.split('/').filter(Boolean);
+    let node=root;
+    for(let i=0;i<parts.length;i++){
+      const part=parts[i];
+      const isLast=i===parts.length-1;
+      if(isLast){
+        node.files.push({name:part,path,file});
+      }else{
+        if(!node.kids.has(part)) node.kids.set(part,{name:part,kids:new Map(),files:[]});
+        node=node.kids.get(part);
+      }
+    }
+  }
+  return root;
+}
+function renderTreeNode(node, depth, lines, maxRows){
+  if(lines.length>=maxRows) return;
+  // sort folders then files
+  const folders=[...node.kids.keys()].sort((a,b)=>a.localeCompare(b));
+  const files=[...node.files].sort((a,b)=>a.name.localeCompare(b.name));
+  for(const fname of folders){
+    if(lines.length>=maxRows) break;
+    const child=node.kids.get(fname);
+    const indent='│  '.repeat(Math.max(0,depth))+ (depth>=0?'├─ ':'');
+    lines.push({type:'folder',name:fname,depth,indent,path:null,file:null});
+    renderTreeNode(child, depth+1, lines, maxRows);
+  }
+  for(const f of files){
+    if(lines.length>=maxRows) break;
+    const indent='│  '.repeat(Math.max(0,depth))+ (depth>=0?'├─ ':'');
+    lines.push({type:'file',name:f.name,depth,indent,path:f.path,file:f.file});
+  }
+}
+function render(){
+  const arr=[...files],total=arr.reduce((sum,[,f])=>sum+f.size,0);
+  $('cnt').textContent=arr.length?`${arr.length} files · ${fmt(total)}`:'No files selected';
+  $('clr').hidden=$('list').hidden=!arr.length;
+  if(!arr.length){$('list').innerHTML='';updatePreflight();return}
+
+  const tree=buildTree(arr);
+  const rows=[];
+  renderTreeNode(tree, 0, rows, 400);
+  const folderCount=[...rows].filter(r=>r.type==='folder').length;
+  const html=[];
+  html.push(`<div class="tree-summary"><i class="fa-solid fa-folder-tree"></i> Project Structure <span style="margin-left:auto;letter-spacing:0;text-transform:none;font-weight:600">${folderCount} folder · ${arr.length} file</span></div>`);
+  for(const row of rows.slice(0,350)){
+    if(row.type==='folder'){
+      html.push(`<div class="item tree-folder-row"><span class="tree-indent">${row.depth?'│ '.repeat(row.depth)+'├─':'▾'}</span><span class="tree-icon folder"><i class="fa-solid fa-folder"></i></span><span class="tree-name folder-name" title="${esc(row.name)}">${esc(row.name)}/</span></div>`);
+    }else{
+      const v=inspectFile(row.path,row.file);
+      const ic=fileIcon(row.name);
+      const previewable=row.file.size<=1024*1024 && /\.(txt|md|json|js|jsx|ts|tsx|css|html|xml|yml|yaml|toml|csv|svg|py|java|kt|dart|sh|sql|env\.example)$/i.test(row.path);
+      html.push(`<div class="item"><span class="tree-indent">${row.depth?'│ '.repeat(row.depth)+'├─':'├─'}</span><span class="tree-icon ${ic.cls}"><i class="fa-solid ${ic.icon}"></i></span><span class="tree-name" title="${esc(row.path)}">${esc(row.name)}</span><em>${fmt(row.file.size)}</em><span class="file-state ${v.level}" title="${esc(v.message)}">${v.level==='pass'?'Passed':v.level==='warn'?'Review':'Failed'}</span><div class="file-actions">${previewable?`<button type="button" class="preview-btn" data-preview="${esc(row.path)}">Preview</button>`:''}<button type="button" data-p="${esc(row.path)}" aria-label="Remove ${esc(row.path)}" title="Remove file">×</button></div></div>`);
+    }
+  }
+  if(rows.length>350) html.push(`<div class="item"><em>+${rows.length-350} baris lainnya</em></div>`);
+  $('list').innerHTML=html.join('');
+  updatePreflight();
+}
+
+async function walk(en,base){
+  if(en.isFile)return new Promise(res=>en.file(f=>res([{path:base+en.name,file:f}]),()=>res([])));
+  const rd=en.createReader();let all=[],b;
+  do{b=await new Promise(r=>rd.readEntries(r,()=>r([])));all.push(...b)}while(b.length);
+  return (await Promise.all(all.map(e=>walk(e,base+en.name+'/')))).flat();
+}
+const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f)});
+async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:n},async()=>{while(i<items.length)await fn(items[i++])}))}
+
+function needLogin(){
+  if(token)return false;
+  toast('Connect with a token in Settings first.','info');
+  document.querySelector('#rdNav button[data-page="page-setting"]')?.click();
+  return true;
+}
+function uploadProgress(percent,detail,status){
+  const pct=Math.max(0,Math.min(100,Math.round(percent)));
+  $('uploadPercent').textContent=pct+'%';$('uploadTrackFill').style.width=pct+'%';
+  $('uploadDetail').textContent=detail||'';if(status)$('uploadStatusText').textContent=status;
+  $('fill').style.width=pct+'%';
+}
+function showUploadProgress(){
+  const ov=$('uploadOverlay');ov.classList.add('show');ov.setAttribute('aria-hidden','false');
+  $('uploadTitle').textContent=$('msg').value.trim()||'Project upload';
+  $('uploadSub').textContent=`${files.size} files · ${fmt([...files.values()].reduce((n,f)=>n+f.size,0))}`;
+  $('uploadClose').disabled=true;$('uploadSpinner').classList.remove('done');$('uploadSpinner').style.display='';$('uploadStatusText').textContent='Initializing upload…';
+  uploadProgress(1,'Menyiapkan koneksi ke GitHub…','Initializing upload…');
+}
+function hideUploadProgress(success=false){
+  $('uploadClose').disabled=false;
+  if(success){$('uploadSpinner').classList.add('done');$('uploadSpinner').style.display='';$('uploadStatusText').textContent='Upload complete';$('uploadDetail').textContent='Commit successfully created on GitHub.';uploadProgress(100,'Commit created successfully.','Upload complete');}
+  else $('uploadOverlay').classList.remove('show');
+  $('uploadOverlay').setAttribute('aria-hidden',success?'false':'true');
+}
+$('uploadClose')?.addEventListener('click',()=>{if(!busy){$('uploadOverlay').classList.remove('show');$('uploadOverlay').setAttribute('aria-hidden','true')}});
+
+async function go(){
+  if(busy||!files.size)return;
+  if(needLogin())return;
+  const r=repos[$('repo').value];
+  if(!r)return note('n3','Select a repository in the Repository tab first.','bad');
+  const checks=[...files].map(([p,f])=>inspectFile(p,f));
+  const failed=checks.filter(x=>x.level==='fail');
+  const warnings=checks.filter(x=>x.level==='warn');
+  if(failed.length){note('n3',`${failed.length} file(s) failed the checks. Remove or fix files marked Failed before uploading.`,'bad');render();return}
+  if(warnings.length && !confirm(`${warnings.length} file berpotensi berisi kredensial/secret. Jangan upload token, password, private key, atau .env asli ke repository. Tetap lanjutkan?`))return;
+  busy=true;$('go').disabled=true;$('log').innerHTML='';$('bar').style.display='block';$('fill').style.width='2%';note('n3','');showUploadProgress();
+  try{
+    const o=r.owner.login,n=r.name,br=$('branch').value.trim()||r.default_branch;
+    const pre=normalizePath($('dir').value).replace(/^\/+|\/+$/g,'');
+    if(pre && (pre.split('/').some(part=>part==='..'||part==='') || /^[a-z]:/i.test(pre))) throw new Error('Folder tujuan tidak valid. Hindari path absolut atau segmen ..');
+    const msg=$('msg').value.trim()||'Upload via RepoDrop';
+    const base=`/repos/${o}/${n}`;
+    let items=[...files].map(([p,f])=>({path:(pre?pre+'/':'')+p,file:f}));
+    const destinationPaths=items.map(x=>x.path);
+    if(new Set(destinationPaths).size!==destinationPaths.length) throw new Error('Ada path tujuan duplikat. Periksa kembali folder tujuan dan file.');
+    const total=items.length;
+    let head,lastUrl=`https://github.com/${o}/${n}`;
+    try{head=await gh(`${base}/git/ref/heads/${seg(br)}`)}
+    catch(e){
+      if(e.status===409){
+        log('Repo masih kosong, membuat commit awal…');
+        const first=items.shift();
+        const c=await gh(`${base}/contents/${seg(first.path)}`,{method:'PUT',body:JSON.stringify({message:msg,content:await b64(first.file),branch:br})});
+        lastUrl=c.commit.html_url;
+        log(`<span class="log-ok">✓</span> ${esc(first.path)}`,'log-row');uploadProgress(35,`Uploading ${first.path}`,'Sending file to GitHub…');
+        if(!items.length){fin(lastUrl,total);return}
+        head=await gh(`${base}/git/ref/heads/${seg(br)}`);
+      }else if(e.status===404)throw new Error(`Branch "${br}" tidak ditemukan di ${r.full_name}.`);
+      else throw e;
+    }
+    const parent=head.object.sha;
+    const pc=await gh(`${base}/git/commits/${parent}`);
+    const tree=[];let done=0;
+    const totalItems=items.length||1;
+    await pool(items,2,async it=>{
+      const b=await gh(`${base}/git/blobs`,{method:'POST',body:JSON.stringify({content:await b64(it.file),encoding:'base64'})});
+      tree.push({path:it.path,mode:'100644',type:'blob',sha:b.sha});
+      done++;
+      uploadProgress(35+Math.round((done/totalItems)*55),`Processing files: ${done} of ${totalItems}`, 'Uploading files…');
+      log(`<span class="log-ok">✓</span> <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(it.path)}</span> <em style="color:var(--mute)">${done}/${totalItems}</em>`,'log-row');
+    });
+    uploadProgress(94,'Creating Git tree and commit…','Saving changes…');log('Creating commit…');
+    const t=await gh(`${base}/git/trees`,{method:'POST',body:JSON.stringify({base_tree:pc.tree.sha,tree})});
+    const c=await gh(`${base}/git/commits`,{method:'POST',body:JSON.stringify({message:msg,tree:t.sha,parents:[parent]})});
+    await gh(`${base}/git/refs/heads/${seg(br)}`,{method:'PATCH',body:JSON.stringify({sha:c.sha})});
+    fin(c.html_url,total);
+  }catch(e){
+    note('n3',esc(e.message),'bad');$('fill').style.width='0';$('uploadStatusText').textContent='Upload failed';$('uploadDetail').textContent=e.message||'An error occurred during upload.';$('uploadSpinner').style.display='none';$('uploadClose').disabled=false;$('uploadOverlay').setAttribute('aria-hidden','false');
+    toast(e.message||'Upload failed','bad',4000);
+  }
+  busy=false;render();if(!['Upload failed','Upload complete'].includes($('uploadStatusText').textContent))hideUploadProgress(false);
+}
+function fin(url,n){
+  $('fill').style.width='100%';
+  note('n3',`${n} file(s) uploaded successfully. <a href="${esc(url)}" target="_blank" rel="noopener">Lihat commit</a>`,'ok');
+  toast(`${n} file(s) uploaded successfully`,'ok',3500);
+  hideUploadProgress(true);$('uploadClose').disabled=false;
+  files.clear();busy=false;render();
+}
+
+$('login').onclick=login;
+$('tok').onkeydown=e=>e.key==='Enter'&&login();
+$('out').onclick=()=>{
+  if(files.size && !confirm('There are still files in the upload list. Disconnect anyway? Files that have not been uploaded will be lost.'))return;
+  token='';$('tok').value='';$('me').hidden=true;setAuthUI(false);
+  try{localStorage.removeItem('rd_token')}catch{}
+  repos=[];$('repo').innerHTML='';$('repoMeta').innerHTML='';
+  files.clear();render();toast('Disconnected successfully','info');
+};
+$('repo').onchange=pickRepo;
+$('mk').onclick=e=>mk(e);
+$('nrepo').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();mk(e)}};
+$('pf').onclick=()=>$('fi').click();
+$('pd').onclick=()=>$('di').click();
+$('fi').onchange=e=>{add([...e.target.files].map(f=>({path:f.name,file:f})));e.target.value=''};
+$('di').onchange=e=>{add([...e.target.files].map(f=>({path:f.webkitRelativePath||f.name,file:f})));e.target.value=''};
+$('clr').onclick=()=>{files.clear();render()};
+async function showPreview(previewPath,shouldScroll=true){
+  if(!files.has(previewPath))return;
+  const file=files.get(previewPath);
+  $('previewTitle').textContent=previewPath;
+  $('previewInfo').textContent=`${fmt(file.size)} · preview lokal, file asli tetap utuh`;
+  $('previewContent').textContent='Loading preview…';
+  $('previewPanel').classList.add('show');
+  try{
+    const text=await file.text();
+    $('previewContent').textContent=text.slice(0,20000)+(text.length>20000?'\n\n… preview dipotong pada 20.000 karakter.':'');
+  }catch(err){$('previewContent').textContent='Preview is not available for this file.'}
+  if(shouldScroll)$('previewPanel').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
+}
+$('list').onclick=e=>{
+  const target=e.target;
+  const p=target.dataset&&target.dataset.p;
+  if(p){files.delete(p);render();return}
+  const previewPath=target.dataset&&target.dataset.preview;
+  if(previewPath)showPreview(previewPath,true);
+};
+$('closePreview').onclick=()=>$('previewPanel').classList.remove('show');
+$('go').onclick=go;
+const dz=$('drop');
+['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('over')}));
+['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',async e=>{
+  const ents=[...e.dataTransfer.items].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+  if(ents.length)add((await Promise.all(ents.map(en=>walk(en,'')))).flat());
+  else add([...e.dataTransfer.files].map(f=>({path:f.name,file:f})));
+});
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+setAuthUI(false);
+try{const t=localStorage.getItem('rd_token');if(t){$('tok').value=t;$('remember').checked=true;login()}}catch{}
+</script>
+
+<script>
+(function initCandleRainBg(){
+  const canvas=document.getElementById('bgCanvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CW=22,CH=26;
+  let w=0,h=0,dpr=1,cols=[],raf=0,last=0,ink='220,226,238';
+  const hash=(a,b)=>{let x=(Math.imul(a|0,374761393)+Math.imul(b|0,668265263))|0;x=Math.imul(x^(x>>>13),1274126177);return((x^(x>>>16))>>>0)/4294967296};
+  function readInk(){
+    const st=document.querySelector('.bg-stage');
+    const m=(st?getComputedStyle(st).backgroundColor:'').match(/\d+/g)||[0,0,0];
+    ink=((+m[0]*299+ +m[1]*587+ +m[2]*114)/1000)>140?'20,30,50':'226,230,240';
+  }
+  function resize(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    w=window.innerWidth;h=window.innerHeight;
+    canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);
+    canvas.style.width=w+'px';canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const n=Math.ceil(w/CW)+1;cols=[];
+    for(let q=0;q<n;q++){
+      const b=hash(q,2);
+      cols.push({speed:.18+hash(q,1)*.55,dens:(b<.22?.04:.12+b*.42)*(.75+.45*q/n)});
+    }
+    if(reduce)draw(0);
+  }
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    const rows=Math.ceil(h/CH)+2;
+    ctx.lineWidth=1;
+    for(let q=0;q<cols.length;q++){
+      const c=cols[q],x=Math.round(q*CW+CW/2);
+      const off=t*.001*c.speed,base=Math.floor(off),frac=off-base;
+      for(let r=-1;r<rows;r++){
+        const k=r-base;
+        if(hash(q*131+7,k)>c.dens)continue;
+        const y=(r+frac)*CH+CH/2;
+        const edge=Math.min(1,Math.max(0,y/(h*.14)),Math.max(0,(h-y)/(h*.14)));
+        if(edge<=0)continue;
+        const s1=hash(q*17+3,k*3+1),s2=hash(q*29+5,k*5+2),s3=hash(q*41+9,k*7+3);
+        const bodyH=CH*(.3+.42*s1),bodyW=CW*(.3+.12*s2),wick=CH*(.12+.34*s2);
+        let a=s3>.93?.5:(.07+.17*s3)*(s1>.5?1:.7);
+        a*=edge*(.8+.2*Math.sin(t*.0015+q*1.3+k));
+        ctx.fillStyle='rgba('+ink+','+a.toFixed(3)+')';
+        ctx.fillRect(x-bodyW/2,y-bodyH/2,bodyW,bodyH);
+        ctx.strokeStyle='rgba('+ink+','+Math.min(.7,a*1.15).toFixed(3)+')';
+        ctx.beginPath();ctx.moveTo(x+.5,y-bodyH/2-wick);ctx.lineTo(x+.5,y+bodyH/2+wick);ctx.stroke();
+      }
+    }
+  }
+  function frame(t){
+    raf=requestAnimationFrame(frame);
+    if(t-last<33)return;
+    last=t;draw(t);
+  }
+  readInk();resize();
+  window.addEventListener('resize',resize,{passive:true});
+  new MutationObserver(()=>{readInk();if(reduce)draw(0)}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(!reduce)raf=requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange',()=>{
+    cancelAnimationFrame(raf);
+    if(!document.hidden&&!reduce)raf=requestAnimationFrame(frame);
+  });
+})();
+
+(function initBurger(){
+  const b=document.getElementById('burger'),m=document.getElementById('menuPanel');
+  if(!b||!m)return;
+  const set=o=>{m.classList.toggle('open',o);b.setAttribute('aria-expanded',o);b.setAttribute('aria-label',o?'Close menu':'Buka menu')};
+  b.addEventListener('click',e=>{e.stopPropagation();set(!m.classList.contains('open'))});
+  document.addEventListener('click',e=>{if(!m.contains(e.target))set(false)});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});
+})();
+</script>
+
+</body>
+</html>
